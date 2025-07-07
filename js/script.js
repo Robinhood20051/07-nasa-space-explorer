@@ -74,56 +74,101 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure data is an array
             const images = Array.isArray(data) ? data : [data];
 
-            // Filter only images
-            const imageItems = images.filter(item => item.media_type === 'image');
-
-            if (imageItems.length === 0) {
-                galleryDiv.innerHTML = 'No images found for this date range.';
-                return;
+            // Create array of all 9 consecutive dates to display
+            const startDateObj = new Date(startDate);
+            const allDates = [];
+            for (let i = 0; i < 9; i++) {
+                const currentDate = new Date(startDateObj);
+                currentDate.setDate(startDateObj.getDate() + i);
+                allDates.push(formatDate(currentDate));
             }
 
+            // Create a map of available data by date for quick lookup
+            const dataByDate = {};
+            images.forEach(item => {
+                dataByDate[item.date] = item;
+            });
+
+            console.log('Displaying 9 consecutive days from:', startDate, 'to:', allDates[allDates.length - 1]);
+
             galleryDiv.innerHTML = '';
-            imageItems.forEach((item, idx) => {
-                // Bootstrap card
+            
+            // Display exactly 9 consecutive days
+            allDates.forEach((dateStr, idx) => {
+                const item = dataByDate[dateStr];
+                
+                // Create card for this date
                 const card = document.createElement('div');
                 card.className = 'gallery-item card mb-4 shadow-sm';
                 card.style.cursor = 'pointer';
                 card.style.position = 'relative';
-                // Remove data-bs-toggle and data-bs-target attributes
 
-                const img = document.createElement('img');
-                img.src = item.url;
-                img.alt = item.title;
-                img.className = 'card-img-top';
+                if (item && item.media_type === 'image') {
+                    // We have image data for this date
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.alt = item.title;
+                    img.className = 'card-img-top';
 
-                const cardBody = document.createElement('div');
-                cardBody.className = 'card-body';
+                    const cardBody = document.createElement('div');
+                    cardBody.className = 'card-body';
 
-                const title = document.createElement('h5');
-                title.className = 'card-title';
-                title.textContent = item.title;
+                    const title = document.createElement('h5');
+                    title.className = 'card-title';
+                    title.textContent = item.title;
 
-                const date = document.createElement('p');
-                date.className = 'card-text fw-bold mb-2';
-                date.textContent = item.date;
+                    const date = document.createElement('p');
+                    date.className = 'card-text fw-bold mb-2';
+                    date.textContent = item.date;
 
-                cardBody.appendChild(title);
-                cardBody.appendChild(date);
+                    cardBody.appendChild(title);
+                    cardBody.appendChild(date);
+                    card.appendChild(img);
+                    card.appendChild(cardBody);
 
-                card.appendChild(img);
-                card.appendChild(cardBody);
+                    // Store data for modal
+                    card.dataset.title = item.title;
+                    card.dataset.date = item.date;
+                    card.dataset.explanation = item.explanation;
+                    card.dataset.url = item.url;
+                    
+                } else {
+                    // No image data for this date - show placeholder
+                    const cardBody = document.createElement('div');
+                    cardBody.className = 'card-body text-center';
+                    cardBody.style.minHeight = '200px';
+                    cardBody.style.display = 'flex';
+                    cardBody.style.flexDirection = 'column';
+                    cardBody.style.justifyContent = 'center';
+                    cardBody.style.backgroundColor = '#f8f9fa';
 
-                // Store data for modal
-                card.dataset.title = item.title;
-                card.dataset.date = item.date;
-                card.dataset.explanation = item.explanation;
-                card.dataset.url = item.url;
+                    const title = document.createElement('h5');
+                    title.className = 'card-title text-muted';
+                    title.textContent = 'No Image Available';
+
+                    const date = document.createElement('p');
+                    date.className = 'card-text fw-bold mb-2';
+                    date.textContent = dateStr;
+
+                    const message = document.createElement('p');
+                    message.className = 'card-text text-muted small';
+                    message.textContent = 'Just a matter of time!';
+
+                    cardBody.appendChild(title);
+                    cardBody.appendChild(date);
+                    cardBody.appendChild(message);
+                    card.appendChild(cardBody);
+                    
+                    // Make this card non-clickable
+                    card.style.cursor = 'default';
+                    card.classList.add('disabled-card');
+                }
 
                 galleryDiv.appendChild(card);
             });
 
             // Modal event delegation using Bootstrap JS API
-            galleryDiv.querySelectorAll('.gallery-item').forEach(card => {
+            galleryDiv.querySelectorAll('.gallery-item:not(.disabled-card)').forEach(card => {
                 card.addEventListener('click', function (e) {
                     e.stopPropagation();
                     const modalTitle = document.getElementById('apodModalLabel');
